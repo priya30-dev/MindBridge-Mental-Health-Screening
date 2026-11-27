@@ -24,3 +24,20 @@ data/
 # OS Files
 .DS_Store
 Thumbs.db
+# Local database
+*.db
+
+# Trained risk model (~450 MB) and training output — keep out of git
+model/
+model.zip
+colab_upload.zip
+train.log
+data_ml/
+prep.log
+run.log
+model_english/
+
+*.zip
+.env
+venv/
+

@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      # No torch/transformers here: test_platform swaps the ML models for small
+      # fakes. test_api / test_text need the trained weights in models/, which
+      # are not committed, so they run locally only.
+      - name: Install dependencies
+        run: >
+          pip install numpy==1.26.4 pandas==2.2.1 pytest==8.1.1 librosa==0.10.1 soundfile==0.12.1
+          datasets==2.18.0 "pyarrow<17" "setuptools<81" fastapi==0.110.0 "pydantic[email]==2.6.4" python-multipart==0.0.9 httpx==0.27.0
+          "sqlalchemy>=2.0,<2.2" "PyJWT>=2.8" "reportlab>=4.0"
+      - name: Run tests
+        run: pytest tests/test_safety.py tests/test_fusion.py tests/test_audio.py tests/test_platform.py tests/test_risk_model.py tests/test_hinglish.py -v

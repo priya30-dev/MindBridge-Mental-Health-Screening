@@ -4,6 +4,7 @@ torchvision==0.17.0
 torchaudio==2.2.0
 transformers==4.39.0
 datasets==2.18.0
+pyarrow<17          # newer pyarrow needs numpy 2
 accelerate==0.28.0
 
 # Audio
@@ -19,13 +20,23 @@ lime==0.2.0.1
 fastapi==0.110.0
 uvicorn[standard]==0.29.0
 python-multipart==0.0.9
-pydantic==2.6.4
+pydantic[email]==2.6.4
+
+# Database, auth, reports
+sqlalchemy>=2.0,<2.2
+psycopg2-binary>=2.9
+PyJWT>=2.8
+reportlab>=4.0
+
+# Optional: speech-to-text for voice-only check-ins (set TRANSCRIBE=1)
+# faster-whisper>=1.0
 
 # Dashboard
-streamlit==1.33.0
+streamlit==1.41.1
 plotly==5.20.0
 
 # Utilities
+setuptools<81       # librosa 0.10 imports pkg_resources
 numpy==1.26.4
 pandas==2.2.1
 scikit-learn==1.4.1.post1
