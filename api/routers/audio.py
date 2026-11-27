@@ -15,11 +15,15 @@ from src.utils import extract_audio_features
 router = APIRouter()
 
 ALLOWED_EXTS = {".wav", ".mp3", ".ogg", ".flac", ".m4a"}
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB, matches the dashboard limit
 
 
 @router.post("/analyse", response_model=AnalysisResponse)
 async def analyse_audio(file: UploadFile = File(...)):
-    from api.main import models
+    from api.state import models
+
+    if "audio_model" not in models:
+        raise HTTPException(status_code=503, detail="The voice model isn't loaded on this server.")
 
     ext = os.path.splitext(file.filename or "")[-1].lower()
 
@@ -29,8 +33,12 @@ async def analyse_audio(file: UploadFile = File(...)):
             detail=f"Unsupported format. Use: {ALLOWED_EXTS}"
         )
 
+    content = await file.read()
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="File too large (max 25 MB)")
+
     with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
-        tmp.write(await file.read())
+        tmp.write(content)
         tmp_path = tmp.name
 
     try:
@@ -44,21 +52,13 @@ async def analyse_audio(file: UploadFile = File(...)):
 
         audio_score = audio_result["risk_score"]
 
+        # Audio-only request: score goes in the audio slot, not the text slot
         fusion_result = fuse_scores(
-            text_score=audio_score,
-            audio_score=None
+            text_score=None,
+            audio_score=audio_score,
         )
 
-        return AnalysisResponse(
-            risk_score=fusion_result["risk_score"],
-            risk_level=fusion_result["risk_level"],
-            risk_color=fusion_result["risk_color"],
-            flags=fusion_result["flags"],
-            text_score=fusion_result["text_score"],
-            audio_score=audio_score,
-            top_tokens=None,
-            disclaimer=fusion_result["disclaimer"],
-        )
+        return AnalysisResponse(**fusion_result, top_tokens=None)
 
     finally:
         if os.path.exists(tmp_path):

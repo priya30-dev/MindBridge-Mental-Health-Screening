@@ -8,26 +8,10 @@ sys.path.append(CURRENT_DIR)
 
 from text_model import load_text_model, predict_text
 from audio_model import load_audio_model, predict_audio_features
-from fusion import fuse_scores
+from fusion import fuse_scores, emotion_to_risk
+from safety import detect_crisis_language
 from explainer import explain_text
 from utils import extract_audio_features
-
-
-def emotion_to_risk(text_result: dict) -> float:
-    emotion = text_result["emotion"]
-    confidence = text_result["confidence"]
-
-    risk_weights = {
-        "sadness": 0.85,
-        "fear": 0.75,
-        "anger": 0.65,
-        "surprise": 0.35,
-        "love": 0.15,
-        "joy": 0.05,
-    }
-
-    weight = risk_weights.get(emotion, 0.5)
-    return round(confidence * weight, 2)
 
 
 def run_prediction(text: str, audio_path: str | None = None):
@@ -51,9 +35,12 @@ def run_prediction(text: str, audio_path: str | None = None):
 
         audio_score = audio_result["risk_score"]
 
+    safety = detect_crisis_language(text)
+
     final_report = fuse_scores(
         text_score=text_score,
-        audio_score=audio_score
+        audio_score=audio_score,
+        crisis_detected=safety["crisis_detected"],
     )
 
     explanation = explain_text(
@@ -66,6 +53,7 @@ def run_prediction(text: str, audio_path: str | None = None):
     return {
         "text_analysis": text_result,
         "text_risk_score": text_score,
+        "safety_check": safety,
         "audio_analysis": audio_result,
         "final_report": final_report,
         "explanation": explanation,
