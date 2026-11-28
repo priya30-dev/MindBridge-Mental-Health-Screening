@@ -12,10 +12,18 @@ def _setting(name: str, default: str) -> str:
     then st.secrets, then the local default."""
     if os.getenv(name):
         return os.getenv(name)
-    try:
-        return str(st.secrets[name])
-    except Exception:
-        return default
+    # Only touch st.secrets if a secrets file exists — otherwise Streamlit shows a
+    # "No secrets found" warning box on the page.
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = [os.path.join(os.getcwd(), ".streamlit", "secrets.toml"),
+                  os.path.join(here, ".streamlit", "secrets.toml"),
+                  os.path.join(os.path.expanduser("~"), ".streamlit", "secrets.toml")]
+    if any(os.path.isfile(c) for c in candidates):
+        try:
+            return str(st.secrets[name])
+        except Exception:
+            pass
+    return default
 
 
 API_BASE = _setting("API_BASE", "http://localhost:8000/api/v1").rstrip("/")
