@@ -24,3 +24,23 @@ def test_missing_model_folder_detected(tmp_path):
     assert risk_model_available(str(tmp_path)) is False
     (tmp_path / "config.json").write_text("{}")
     assert risk_model_available(str(tmp_path)) is True
+
+
+def test_fetch_from_hub_only_when_needed(tmp_path, monkeypatch):
+    import huggingface_hub
+    from src import model_loader
+    calls = []
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", lambda **kw: calls.append(kw), raising=False)
+    # no repo configured -> nothing happens
+    monkeypatch.delenv("RISK_MODEL_REPO", raising=False)
+    model_loader.fetch_from_hub(str(tmp_path / "m"), "RISK_MODEL_REPO")
+    assert calls == []
+    # repo configured and folder empty -> download
+    monkeypatch.setenv("RISK_MODEL_REPO", "priya30-dev/mindbridge-risk-muril")
+    model_loader.fetch_from_hub(str(tmp_path / "m"), "RISK_MODEL_REPO")
+    assert calls[0]["repo_id"] == "priya30-dev/mindbridge-risk-muril"
+    # model already there -> no second download
+    (tmp_path / "m").mkdir()
+    (tmp_path / "m" / "config.json").write_text("{}")
+    model_loader.fetch_from_hub(str(tmp_path / "m"), "RISK_MODEL_REPO")
+    assert len(calls) == 1

@@ -9,9 +9,8 @@ SRC_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", "..", "src"))
 sys.path.append(SRC_DIR)
 
 from api.schemas import AnalysisResponse
-from src.audio_model import predict_audio_features
 from src.fusion import fuse_scores
-from src.utils import extract_audio_features
+
 router = APIRouter()
 
 ALLOWED_EXTS = {".wav", ".mp3", ".ogg", ".flac", ".m4a"}
@@ -42,6 +41,10 @@ async def analyse_audio(file: UploadFile = File(...)):
         tmp_path = tmp.name
 
     try:
+        # Imported here so the server starts even without the optional voice-model packages
+        from src.audio_model import predict_audio_features
+        from src.utils import extract_audio_features
+
         audio_features = extract_audio_features(tmp_path)
 
         audio_result = predict_audio_features(

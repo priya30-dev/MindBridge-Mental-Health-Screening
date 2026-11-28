@@ -22,7 +22,8 @@ _MAX = int(os.getenv("AUTH_RATE_LIMIT", "10"))
 
 
 def _rate_limit(request: Request):
-    ip = request.client.host if request.client else "unknown"
+    forwarded = request.headers.get("x-forwarded-for", "")
+    ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
     now = time.time()
     q = _ATTEMPTS[ip]
     while q and now - q[0] > _WINDOW:

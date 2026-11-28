@@ -36,8 +36,5 @@ data_ml/
 prep.log
 run.log
 model_english/
-
-*.zip
-.env
-venv/
-
+deploy_config.json
+.streamlit/secrets.toml

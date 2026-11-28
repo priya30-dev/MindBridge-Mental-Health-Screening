@@ -1,0 +1,6 @@
+# Dashboard-only dependencies (Streamlit Community Cloud reads this file because it sits
+# next to the entrypoint dashboard/app.py — so the heavy ML packages aren't installed there)
+streamlit==1.41.1
+requests>=2.31
+plotly>=5.20
+pandas>=2.2

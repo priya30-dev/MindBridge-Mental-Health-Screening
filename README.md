@@ -262,6 +262,19 @@ pip install -r requirements.txt
 
 ---
 
+## Deploying Online (free)
+
+| Part | Where | How |
+|---|---|---|
+| Models | Hugging Face Hub | `python upload_model.py` |
+| API | Hugging Face Docker Space | `python deploy_api.py` (uses `deploy/space/`) |
+| Database | Neon PostgreSQL | connection string stored as a Space secret |
+| Dashboard | Streamlit Community Cloud | entrypoint `dashboard/app.py`, secret `API_BASE` |
+
+Both scripts ask for tokens/passwords with hidden input and never write them to disk or git.
+The API downloads the models from the Hub on startup (`RISK_MODEL_REPO`, `RISK_MODEL_REPO_EN`).
+Free Spaces sleep when idle; the first visit wakes the server (about a minute).
+
 ## Running the Backend
 
 ```bash

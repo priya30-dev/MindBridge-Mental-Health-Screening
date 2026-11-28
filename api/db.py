@@ -6,7 +6,17 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/mindbridge.db")
+def normalize_db_url(url: str) -> str:
+    """Neon/Supabase give "postgresql://..." (or "postgres://..."). SQLAlchemy 2.1 maps that to
+    the psycopg v3 driver; we ship psycopg2, so name the driver explicitly."""
+    url = url.strip()
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg2://" + url[len(prefix):]
+    return url
+
+
+DATABASE_URL = normalize_db_url(os.getenv("DATABASE_URL", "sqlite:///./data/mindbridge.db"))
 
 if DATABASE_URL.startswith("sqlite:///"):
     _db_dir = os.path.dirname(DATABASE_URL.replace("sqlite:///", "", 1))

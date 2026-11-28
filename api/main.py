@@ -1,3 +1,10 @@
+try:  # read .env before anything reads settings (servers set real environment variables instead)
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 import os
 from contextlib import asynccontextmanager
 

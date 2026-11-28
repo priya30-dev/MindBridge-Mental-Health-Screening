@@ -7,7 +7,18 @@ import re
 import requests
 import streamlit as st
 
-API_BASE = os.getenv("API_BASE", "http://localhost:8000/api/v1")
+def _setting(name: str, default: str) -> str:
+    """Environment variable first (Streamlit Cloud also exposes root-level secrets this way),
+    then st.secrets, then the local default."""
+    if os.getenv(name):
+        return os.getenv(name)
+    try:
+        return str(st.secrets[name])
+    except Exception:
+        return default
+
+
+API_BASE = _setting("API_BASE", "http://localhost:8000/api/v1").rstrip("/")
 
 MOODS = {
     "thriving": {"bg": "#DDF7EC", "fg": "#0F6B4A", "bar": "#7FD9B0"},
@@ -163,6 +174,10 @@ def api(method: str, path: str, raw: bool = False, **kwargs):
     if resp.status_code == 401 and token:
         logout()
         st.rerun()
+    if resp.status_code in (502, 503, 504) and "application/json" not in resp.headers.get("content-type", ""):
+        # Free hosting puts the server to sleep when nobody uses it; the first request wakes it
+        raise ApiError("the mindbridge server is waking up (free hosting naps when idle). "
+                       "please try again in a minute.")
     if resp.status_code >= 400:
         try:
             detail = resp.json().get("detail", resp.text)

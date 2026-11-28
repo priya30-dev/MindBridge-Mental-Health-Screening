@@ -328,3 +328,13 @@ def test_no_routing_without_english_model(client):
         assert r["model_used"] == "multilingual"
     finally:
         models.pop("risk_info")
+
+
+def test_postgres_url_uses_psycopg2():
+    from sqlalchemy.engine import make_url
+    from api.db import normalize_db_url
+    for raw in ("postgres://u:p@host/db?sslmode=require", "postgresql://u:p@host/db?sslmode=require"):
+        url = normalize_db_url(raw)
+        assert url == "postgresql+psycopg2://u:p@host/db?sslmode=require"
+        assert make_url(url).get_driver_name() == "psycopg2"
+    assert normalize_db_url("sqlite:///./data/x.db") == "sqlite:///./data/x.db"
