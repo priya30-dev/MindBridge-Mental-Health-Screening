@@ -81,6 +81,30 @@ Not validated clinically.
 """
 
 
+def upload_with_retries(api, repo_id: str, folder: str, attempts: int = 5) -> None:
+    """Big files over home internet can drop mid-way. upload_large_folder (newer
+    huggingface_hub) resumes where it stopped; otherwise retry the normal upload."""
+    import time
+
+    ignore = ["*.zip", "__pycache__/*", ".cache/*"]
+    for attempt in range(1, attempts + 1):
+        try:
+            if hasattr(api, "upload_large_folder"):
+                api.upload_large_folder(repo_id=repo_id, folder_path=folder, repo_type="model",
+                                        ignore_patterns=ignore)
+            else:
+                api.upload_folder(repo_id=repo_id, folder_path=folder, repo_type="model",
+                                  ignore_patterns=ignore, commit_message="Upload MindBridge risk model")
+            return
+        except Exception as e:  # network drop, timeout, ...
+            if attempt == attempts:
+                raise
+            wait = 15 * attempt
+            print(f"\n  Upload interrupted ({type(e).__name__}). Retrying in {wait}s "
+                  f"(attempt {attempt + 1}/{attempts}) ...", flush=True)
+            time.sleep(wait)
+
+
 def main():
     token = os.getenv("HF_TOKEN") or getpass.getpass("Paste your Hugging Face WRITE token (hidden), then Enter: ").strip()
     api = HfApi(token=token)
@@ -105,9 +129,7 @@ def main():
 
         print(f"Uploading ./{folder} → https://huggingface.co/{repo_id}  (a few minutes for ~1 GB) ...", flush=True)
         api.create_repo(repo_id, repo_type="model", exist_ok=True, private=False)
-        api.upload_folder(repo_id=repo_id, folder_path=folder, repo_type="model",
-                          ignore_patterns=["*.zip", "__pycache__/*"],
-                          commit_message="Upload MindBridge risk model")
+        upload_with_retries(api, repo_id, folder)
         config[key] = repo_id
         print(f"  ✓ done: https://huggingface.co/{repo_id}\n")
 
